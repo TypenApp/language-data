@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "typen-language-data"
+version = "1.0.9"
+description = "Global English lexicon pipeline, confusion sets, domain packs and held-out quality corpus for Typen"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Omnii"}]
+dependencies = [
+    "cryptography>=42.0.0",
+    "zstandard>=0.22.0",
+    "rapidfuzz>=3.6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.5.0",
+    "wordfreq>=3.1.0",
+]
+
+[project.urls]
+Homepage = "https://autocorrect-desktop.vercel.app"
+Repository = "https://github.com/TypenApp/language-data"
+MainApp = "https://github.com/TypenApp/typen"
+Issues = "https://github.com/TypenApp/language-data/issues"
+
+[project.scripts]
+autocorrect-pipeline = "pipeline.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src", "."]
+include = ["autocorrect*", "pipeline*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+src = ["src", "pipeline", "tests"]
+extend-exclude = ["resources", "pipeline/data"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S"]
+ignore = [
+    "E501",
+    "UP017",
+    "UP035",
+    "UP042",
+    "S101",
+    "S105", "S106",
+    "S110", "S112",
+    "S603", "S607",
+    "B008",
+    "B905",
+]

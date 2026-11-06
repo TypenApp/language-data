@@ -1,0 +1,47 @@
+name: Publish Language Resource Bundle
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    name: Package Zstandard bundle & domain packs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pytest tests -q
+      - name: Build .tar.zst archive and SHA256SUMS.txt
+        run: |
+          python - <<'PY'
+          import hashlib, json, pathlib
+          from pipeline.sign_release import create_zstd_bundle_archive
+          root = pathlib.Path("resources/en_base")
+          manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+          ver = manifest["version"]
+          out = pathlib.Path("dist")
+          out.mkdir(exist_ok=True)
+          archive_name = f"en_base-{ver}.tar.zst"
+          sha, size = create_zstd_bundle_archive(root, out / archive_name)
+          sums = [f"{sha}  {archive_name}"]
+          for pack in sorted((root / "packs").glob("*.pack.json")):
+              dst = out / pack.name
+              dst.write_bytes(pack.read_bytes())
+              sums.append(f"{hashlib.sha256(dst.read_bytes()).hexdigest()}  {pack.name}")
+          (out / "SHA256SUMS.txt").write_text("\n".join(sums) + "\n", encoding="ascii")
+          PY
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
